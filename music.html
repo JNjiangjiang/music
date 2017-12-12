@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+		<title></title>
+		<link rel="stylesheet" type="text/css" href="css/style.css"/>
+		<script type="text/javascript" src="js/transformCss.js"></script>
+		<script type="text/javascript" src="js/verticalDrag.js"></script>
+		<script type="text/javascript">
+			//清除浏览器默认行为
+			document.addEventListener('touchstart',function(event){
+			    event.preventDefault();
+		    });
+			//rem适配
+			(function(){
+			var width = document.documentElement.clientWidth;
+			var styleN = document.createElement('style');
+			styleN.innerHTML = 'html{font-size:'+ width/16 +'px !important;}';
+			document.head.appendChild(styleN);
+		    })();
+		
+		    window.onload = function(){
+	           //导航条
+		    	navs();
+		    	function navs(){
+		    	    var content = document.getElementById('content');
+		    	    var liNode = document.querySelectorAll('#navsList li');
+		    	    var navsWrap =document.getElementById('navsWrap');
+		    	    var navsList = document.getElementById('navsList');
+                	transformCss(navsList,'translateZ',0.1);
+
+		    	        var disX=0;		
+		    	        var eleX=0;
+		    	        var startX=0;
+		    	        
+		    	        var startTime = 0;
+		    	        var startValue =0;
+		    	        var endTime  = 0;
+		    	        var endValue =0;
+		    	        
+		    	        var disTime =1;//手指点击和抬起一次时,disTime和disValue都为0,这时speed为NaN,所以设置disTime为1
+		    	        var disValue=0;
+		    	        
+		    	    navsWrap.addEventListener('touchstart',function(event){
+		    	    	var touch = event.changedTouches[0];
+		    	    	
+		    	    	navsList.style.transition='none';
+		    	    	
+		    	    	eleX = transformCss(navsList,'translateX')
+		    	    	startX = touch.clientX;
+		    	    	
+		    	    	startTime = new Date().getTime();//获取的单位是毫秒
+		    	    	startValue = eleX;
+		    	    	
+		    	    	disValue=0;
+
+		    	    });
+		    	    navsWrap.addEventListener('touchmove',function(event){
+		    	    	var touch = event.changedTouches[0];
+		    	    	
+		    	    	var endX = touch.clientX;
+		    	    	disX = endX-startX;//手指的距离差
+		    	    	
+                        var translateX=disX+eleX;
+                        
+                        var ratio=0; 
+                        var minX = document.documentElement.clientWidth-navsList.offsetWidth;
+                        
+                        if(translateX>0){
+                        	ratio = 1-translateX/document.documentElement.clientWidth; 
+                        	translateX = translateX*ratio;//比例应该是逐渐减小的
+                        }else if(translateX<minX){
+                        	var blank = minX - translateX;
+                        	ratio = 1-blank/document.documentElement.clientWidth;
+                        	translateX =  minX - ratio*blank;//因为是往右走,所以translateX的值应该大于0
+                        }
+		    	
+                        
+                        transformCss(navsList,'translateX',translateX);
+                        
+                        endTime = new Date().getTime();
+                        endValue = translateX;
+                        disTime = endTime - startTime;
+                        disValue = endValue - startValue;
+       
+		    	    	
+		    	    });
+		    	    navsWrap.addEventListener('touchend',function(event){
+		    	    	var touch = event.changedTouches[0];
+
+		    	    	var speed = disValue/disTime;  
+		    	    	var target = transformCss(navsList,'translateX')+speed*100;
+		    	    	//目标距离=原有的拖拽距离+速度*指定比例
+		    	    	var minX = document.documentElement.clientWidth-navsList.offsetWidth; 
+		    	    	
+		    	    	var bezier = '';
+		    	    	if(target>0){
+		    	    		target=0;
+		    	    		bezier = 'cubic-bezier(.09,1.61,.92,1.45)';//用贝塞尔曲线实现回弹的效果
+		    	    		
+		    	    	}else if(target<minX){
+		    	    		target = minX;
+		    	    		bezier = 'cubic-bezier(.09,1.61,.92,1.45)';
+		    	    	}
+		    	        navsList.style.transition = '3s '+bezier;//注意3s后的空格不能丢掉
+		    	        
+		    	        transformCss(navsList,'translateX',target)
+//		    	        console.log(target);
+		    	    });
+		    	}
+		    	 //点击变色         
+                changeColor();
+                function changeColor(event){
+                	var liNodes = document.querySelectorAll('#navsList li');
+                	var navsList = document.getElementById('navsList');
+                	//事件委托
+//             	navsList.addEventListener('touchend',function(event){
+//              		var touch = event.changedTouches[0];
+//              		var  event = event||window.event;
+//              		var currentTarget = event.target;
+//              		
+//              		
+//              		 if(currentTarget.nodeName.toLowerCase()=='li'){
+//              		 	if(!currentTarget.isActive){
+//              		 	    navsList.querySelectorAll('li')[0].className = '';
+//              		 	    currentTarget.className = 'on';
+//              		 		currentTarget.isActive = true;
+//              		 	}else{
+//              		 		currentTarget.className = '';
+//              		 	}
+//				          }else if(currentTarget.nodeName.toLowerCase ()== 'a'){
+//				         	//判断当点a标签时，让它加在自己的父级li上
+//					        currentTarget.parentNode.className = 'on';
+//				          }
+////				          currentTarget.isActive = false;
+//              	})
+               
+                  for(var i=0;i<liNodes.length;i++){
+                  	    liNodes[i].addEventListener('touchmove',function(event){
+                  	         if(!this.isMove){
+                  		       this.isMove =true;
+                  		       //判断是否正在移动,如果正在移动就不要触发end的效果,防止滑动过程中的误触
+                  	        }
+                       });
+                        liNodes[i].addEventListener('touchend',function(event){
+                        	
+                        	var touch = event.changedTouches[0];
+                        	
+                        	//更新小圆点
+                        	if(!this.isMove){
+                        		for(var j=0;j<liNodes.length;j++){
+                        		liNodes[j].className='';//先清除原有的样式
+                        	    }   
+                        	this.className='on';
+                            }
+                        	this.isMove = false;
+                        })                     
+                    }
+                };
+                
+                //无缝滑屏区域
+                banner();
+                function banner(){
+               
+                	var wrap = document.getElementById('ban_wrap');
+                	var list = document.getElementById('ban_list');
+                	transformCss(list,'translateZ',0.1);
+                	list.innerHTML += list.innerHTML;
+                	var liNode = document.querySelectorAll('#ban_list li');
+                	var spanNode = document.querySelectorAll('#ban_navs span');
+                	
+                	var styleNode = document.createElement('style');
+                	styleNode.innerHTML = '#ban_wrap{height:'+liNode[1].offsetHeight+'px;}';
+                	styleNode.innerHTML += '#ban_list li{width:'+100/liNode.length+'%;}';
+                	styleNode.innerHTML += '#ban_list{width:'+liNode.length+'00%;}';
+                	document.head.appendChild(styleNode);
+      
+                	
+                	var eleX =0;
+                	var disX =0;
+                	var startX =0;
+                	var timer =0;
+                	var index = 0;
+    
+                	wrap.addEventListener('touchstart',function(event){
+                		var touch = event.changedTouches[0];
+                		
+                		clearInterval(timer);
+                		list.style.transition = 'none';//清除过渡
+                		
+                	    startX = touch.clientX;
+                	    eleX = transformCss(list,'translateX');
+
+                	    
+                	    var index = 0 ;
+                	    
+                	    var left = transformCss(list,'translateX');
+                	    var index = Math.round(-left/document.documentElement.clientWidth);
+                	    
+                	    if(index==0){
+                	    	index = spanNode.length;
+                	    }else if(index==liNode.length-1){
+                	    	index = spanNode.length-1;
+                	    }
+                	 
+                		transformCss(list,'translateX',-index*document.documentElement.clientWidth);
+                		console.log(-index*document.documentElement.clientWidth);
+
+                	
+                	});
+                	
+                	wrap.addEventListener('touchmove',function(event){
+                		var touch = event.changedTouches[0];
+                	    var endX = touch.clientX;
+                	    disX = endX - startX;
+                	    
+                	    transformCss(list,'translateX',disX+eleX);
+                		
+                	});
+                	
+                	wrap.addEventListener('touchend',function(event){
+                		var touch = event.changedTouches[0];
+                	    var index = 0 ;
+                	    
+                	    var left = transformCss(list,'translateX');
+                	    index = Math.round(-left/document.documentElement.clientWidth);
+                	    
+                	    if(index<0){
+                	    	index = 0;
+                	    }else if(index>liNode.length-1){
+                	    	index = liNode.length-1;
+                	    }
+                	    list.style.transition='1s';
+                		transformCss(list,'translateX',-index*document.documentElement.clientWidth);
+                		
+                		for(var i=0;i<spanNode.length;i++){
+					         spanNode[i].className = '';
+				        };
+				        spanNode[index%spanNode.length].className = 'on';
+				        autoInterval();
+                	});
+                	
+                	//自动播放
+                 	autoInterval();
+                	function autoInterval(){
+                	    clearInterval(timer);
+                	    timer = setInterval(function(){
+                		
+                		    if(index==liNode.length-1){
+                			     index=spanNode.length-1;
+                			   
+                		    }
+                		     list.style.transition = 'none';
+                		     transformCss(list,'translateX',-index*document.documentElement.clientWidth);
+                		
+                	        setTimeout(function(){
+                	        	index++;
+                	        	list.style.transition = '0.5s';
+                	        	transformCss(list,'translateX',-index*document.documentElement.clientWidth);
+                                
+                                for(var i=0;i<spanNode.length;i++){
+                                	spanNode[i].className='';
+                                }
+                                    spanNode[index%spanNode.length].className='on';
+                	        },20)
+                	    },1000)
+                    }
+                }
+                
+        
+                //定位层的切换
+		    	switchMenu();
+		    	function switchMenu(){
+		    		var menuBtn = document.getElementById('menuBtn');
+		    		var list = document.getElementById('list');
+		    		
+		    		menuBtn.addEventListener('touchstart',function(event){
+		    			if(menuBtn.className=='menuBtnClos'){
+		    				menuBtn.className='menuBtnOpen';
+		    				list.style.display='block';
+		    			}
+		    			else if(menuBtn.className=='menuBtnOpen'){
+		    				menuBtn.className='menuBtnClos';
+		    				list.style.display='none';
+		    			}
+		    			event.stopPropagation();
+		    		})
+		    		
+		    		document.addEventListener('touchstart',function(event){
+		    			if(menuBtn.className=='menuBtnOpen'){
+		    				menuBtn.className='menuBtnClos';
+		    				list.style.display='none';
+		    			}
+		    			list.addEventListener('touchstart',function(event){
+		    			     event.stopPropagation();		
+		    			})
+		    		})
+		    	};
+		
+		
+		        //tab切换
+		        tab();
+		        function tab(){
+		        	var tabWrap = document.querySelectorAll('.tabWrap');
+		        	var tabNav = document.querySelectorAll('.tabNav');
+
+		        	var translateX = tabNav[0].offsetWidth;//考虑到居中时的margin值
+		        	
+		        	for(var  i=0;i<tabWrap.length;i++){
+		        		
+		        		move(tabWrap[i],tabNav[i]);
+		        	}
+		        	
+		        	function move(tabWrap,tabNav){
+		        		transformCss(tabNav,'translateZ',0.1);
+		        		transformCss(tabWrap,'translateZ',0.1);
+		        		var loading = tabWrap.querySelectorAll('.tabLoading');
+		        	//如果用document就会获取页面中所有tabWrap区域的loading图
+		        		transformCss(tabWrap,'translateX',-translateX);
+		        		//用-translateX重置主体区域,让loading分别在两侧
+		        		var eleX = 0;
+		        		var startX =0;
+		        		
+		        		var isLoad = false;
+		        		var isFirst = true;
+		        		var isY = true;
+		        		 var eleY =0;
+		        		 var startY =0;
+		        		 
+		        		 var indexA = 0;
+		        		 
+		        		var greenNav = tabNav.querySelector('span');
+		        	    var aNode = tabNav.querySelectorAll('a');
+		        	
+		        		 
+		        		tabWrap.addEventListener('touchstart',function(event){
+		        			var touch = event.changedTouches[0];
+		        					        			
+		        			eleX = transformCss(tabWrap,'translateX');
+		        			startX = touch.clientX;
+		        			
+		        			if(isLoad){
+		        				return;
+		        			}
+
+		        			
+		        			eleY = transformCss(tabWrap,'translateY');
+		        			startY=touch.clientY;
+		        			
+		        		});
+		        		
+		        		tabWrap.addEventListener('touchmove',function(event){
+		        			var touch = event.changedTouches[0];
+		        			var endX = touch.clientX;
+		        			var disX = endX-startX;
+		        			
+		        			var endY =touch.clientY;
+		        			var disY =endY-endX;
+		        			
+		        			if(isLoad){
+		        				return;
+		        			}
+		        			if(isFirst){
+		        				isFirst=false;
+		        				if(Math.abs(disX)>Math.abs(disY)){
+		        					isX = false;
+		        					isX = 0;
+		        				}
+		        			}
+		        			
+		        			transformCss(tabWrap,'translateX',disX+eleX);
+		        			
+		        			if(Math.abs(disX)>translateX/2){
+		        				//手指划过1/2时
+		        				var target = disX>0?0:(-2*translateX);
+		        				console.log(target);
+		        				console.log(disX);
+		        				isLoad=true;
+		        				
+		        				if(disX>0){
+		        					indexA = indexA-1;
+		        				}else if(disX<0){
+		        					indexA = indexA+1;
+		        				}
+		        				
+		        				if(indexA<0){
+		        					indexA=aNode.length-1;	
+		        				}else if(indexA>aNode.length-1){
+		        					indexA=0;
+		        				}
+		        				
+		        				greenNav.style.transition = '1s';
+		        				transformCss(greenNav,'translateX',aNode[indexA].offsetLeft);
+	
+		        		        tabWrap.style.transition ='1s';
+		        				transformCss(tabWrap,'translateX',target);
+		 
+		        				
+		        				tabWrap.addEventListener('transitionEnd',end);
+		        				tabWrap.addEventListener('webkitTransitionEnd',end);
+		        
+		        		
+		        			function end(){
+		        				       				
+		        				for(var i=0;i<loading.length;i++){
+		        					loading[i].style.opacity ='1';//用透明度控制loding图是否出现
+		        				}
+		        				
+		        				setTimeout(function(){
+		        					tabWrap.style.transition='0.5s';
+		        					transformCss(tabWrap,'translateX',-translateX);
+		        					
+		        					isLoad=false;
+		        					
+		        					for(var i=0;i<loading.length;i++){
+		        					loading[i].style.opacity ='0';
+		        				}
+		        					
+		        				},1000)
+		        			 tabWrap.removeEventListener('transitionEnd',end);//解绑
+				             tabWrap.removeEventListener('webkitTransitionEnd',end);
+		        				
+		        			}
+		       
+				           }
+		        		});
+		        		
+		        		tabWrap.addEventListener('touchend',function(event){
+		        			var touch = event.changedTouches[0];
+		        			
+		        			if(isLoad){
+		        				return;
+		        			}
+		        			
+		        			var endX = touch.clientX;
+		        			var disX =endX-startX;
+		        			
+		        			if(Math.abs(disX)<translateX/2){
+		        				tabWrap.style.transition ='0.5s';
+		        				transformCss(tabWrap,'translateX',-translateX)
+		        			}
+		        		})
+		        		
+		        		
+		        	}
+		        }
+		     
+		        //竖向滑屏时添加滚动条
+		           drag();
+		        function drag(){		        		
+	              var wrap = document.getElementById('wrap');
+	              var content = document.getElementById('content');
+
+	              var scroll = document.getElementById('scroll');
+	              var ratio = document.documentElement.clientHeight/content.offsetHeight;
+	              scroll.style.height = document.documentElement.clientHeight*ratio+'px';
+	              
+  
+                  var callback = {
+                  	start:function(){
+                  		scroll.style.opacity = '1';
+                  		
+                  	},
+                  	move:function(){
+                  		scroll.style.opacity ='1';
+                  		var dis = transformCss(content,'translateY')*ratio;
+                  		transformCss(scroll,'translateY',-dis);
+                  	},
+                  	end:function(){
+     
+                  		scroll.style.opacity ='0';
+                  	
+                  	}
+                  	
+                  }	        	
+		        	verticalDrag(wrap,content,callback);//竖向滑屏
+		        }
+	}	
+		</script>
+	</head>
+	<body>
+	<div id="wrap">
+		<div id="header">
+			<div id="headerTop">
+				<h1 id='logo'><a href="##"><img src="img/logo.png"/></a></h1>
+				<a href="##" id='menuBtn' class='menuBtnClos'></a>
+					<div id="navs">
+						<a href="#" id="searchBtn">搜索</a>
+						<a href="#">注册</a>
+						<a href="#">登陆</a>
+					</div>
+			</div>
+			<form id='search'>
+				<input type="text" placeholder="请输入搜索内容"/>
+				<input type="submit" value="搜索"/>
+			</form>
+			<ul id='list'>
+				<li><a href="#">首页</a></li>
+				<li><a href="#">MV</a></li>
+				<li><a href="#">悦单</a></li>
+				<li><a href="#">V榜</a></li>
+				<li><a href="#">音悦</a></li>
+				<li><a href="#">商城</a></li>
+				<li><a href="#">节目</a></li>
+				<li><a href="#">饭团</a></li>
+				<li><a href="#">咨询</a></li>
+				<li><a href="#">我的家</a></li>
+				<li><a href="#">APP下载</a></li>
+				<li><a href="#">热门应用</a></li>
+			</ul>
+		</div>
+		<div id="content">
+			<div id="navsWrap">
+			<ul id='navsList'>
+				<li class="on"><a href="#">首页</a></li>
+				<li><a href="#">MV</a></li>
+				<li><a href="#">悦单</a></li>
+				<li><a href="#">V榜</a></li>
+				<li><a href="#">音悦</a></li>
+				<li><a href="#">商城</a></li>
+				<li><a href="#">节目</a></li>
+				<li><a href="#">饭团</a></li>
+				<li><a href="#">咨询</a></li>
+				<li><a href="#">我的家</a></li>
+				<li><a href="#">APP下载</a></li>
+				<li><a href="#">热门应用</a></li>
+			</ul>
+		</div>
+		<div id="ban_wrap">
+			<ul id="ban_list">
+				<li><a href="##"><img src="img/1.jpg"/></a></li>
+				<li><a href="##"><img src="img/2.jpg"/></a></li>
+				<li><a href="##"><img src="img/3.jpg"/></a></li>
+				<li><a href="##"><img src="img/4.jpg"/></a></li>
+				<li><a href="##"><img src="img/5.jpg"/></a></li>
+			</ul>	
+			<div id="ban_navs">
+				<span class='on'></span>
+				<span></span>
+				<span></span>
+				<span></span>
+				<span></span>
+			</div>
+		</div>
+		<div class="tab">
+			<div class="tabHeader">
+				<h4>MV首播</h3>
+				<span>更多&gt;</span>
+			</div>
+			<div class="tabNav">
+	            <a href="##">全部</a>
+	            <a href="##">内地</a>
+	            <a href="##">港台</a>
+	            <a href="##">欧美</a>
+	            <a href="##">韩国</a>
+	            <a href="##">日本</a>
+	            <span></span>
+			</div>
+			<div class="tabWrap">
+				<ul class="tabLoading"></ul>
+				<ul class="tabList">
+					<li><a href="#"><img src="img/a.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/b.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/c.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/d.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/e.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/f.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+								</ul>
+						<ul class="tabLoading"></ul>
+			</div>
+		</div>
+		<div class="tab">
+			<div class="tabHeader">
+				<h4>MV首播</h3>
+				<span>更多&gt;</span>
+			</div>
+			<div class="tabNav">
+	            <a href="##">全部</a>
+	            <a href="##">内地</a>
+	            <a href="##">港台</a>
+	            <a href="##">欧美</a>
+	            <a href="##">韩国</a>
+	            <a href="##">日本</a>
+	            <span></span>
+			</div>
+			<div class="tabWrap">
+				<ul class="tabLoading"></ul>
+				<ul class="tabList">
+					<li><a href="#"><img src="img/a.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/b.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/c.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/d.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/e.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/f.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+								</ul>
+						<ul class="tabLoading">
+				</ul>
+			</div>
+			
+		</div>
+				<div class="tab">
+			<div class="tabHeader">
+				<h4>MV首播</h3>
+				<span>更多&gt;</span>
+			</div>
+			<div class="tabNav">
+	            <a href="##">全部</a>
+	            <a href="##">内地</a>
+	            <a href="##">港台</a>
+	            <a href="##">欧美</a>
+	            <a href="##">韩国</a>
+	            <a href="##">日本</a>
+	            <span></span>
+			</div>
+			<div class="tabWrap">
+				<ul class="tabLoading"></ul>
+				<ul class="tabList">
+					<li><a href="#"><img src="img/a.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/b.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/c.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/d.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/e.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+					<li><a href="#"><img src="img/f.jpg"/></a><span>君に贈る花がない</span>
+								<div class="ice">
+									<div class="ice_left">
+										<span class="ice_pic"></span>
+										<span>9999</span>
+									</div>
+									<div class="ice_right">
+										<span class="ice_pic"></span>
+										<span>6</span>
+									</div>
+								</div></li>
+								</ul>
+						<ul class="tabLoading">
+				</ul>
+			</div>
+		</div>
+		</div>
+	</div>	
+	<div id="scroll">		
+	</div>
+	</body>
+</html>
